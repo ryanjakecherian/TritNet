@@ -14,7 +14,7 @@ include(ExternalProject)
 ExternalProject_Add(
     cutlass
     GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
-    GIT_TAG master
+    GIT_TAG main
 
     CMAKE_ARGS -DCUTLASS_ENABLE_TESTS=OFF
     CTEST_UPDATE_COMMAND ""
