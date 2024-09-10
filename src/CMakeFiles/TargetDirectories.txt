@@ -1,4 +1,0 @@
-/users/ryanc/BNN/project/src/CMakeFiles/test.dir
-/users/ryanc/BNN/project/src/CMakeFiles/run.dir
-/users/ryanc/BNN/project/src/CMakeFiles/edit_cache.dir
-/users/ryanc/BNN/project/src/CMakeFiles/rebuild_cache.dir

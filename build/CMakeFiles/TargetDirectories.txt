@@ -1,4 +1,0 @@
-/users/ryanc/BNN/TritNet/build/CMakeFiles/test.dir
-/users/ryanc/BNN/TritNet/build/CMakeFiles/run.dir
-/users/ryanc/BNN/TritNet/build/CMakeFiles/edit_cache.dir
-/users/ryanc/BNN/TritNet/build/CMakeFiles/rebuild_cache.dir
