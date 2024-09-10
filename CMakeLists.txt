@@ -3,20 +3,30 @@
 # $ make run
 
 ## NOTE IF THIS CMAKE BUILD SYSTEM IS BEING ANNOYING, JUST RUN THIS:
-# nvcc --expt-relaxed-constexpr -I./cutlass/include src/test.cu -o exe
 
 
 cmake_minimum_required(VERSION 3.10)
-project(MyBNNProject LANGUAGES CXX CUDA)
+project(tritnet LANGUAGES CXX CUDA)
+
+
+# External dependencies (CUTLASS)
+include(ExternalProject)
+ExternalProject_Add(
+    cutlass
+    GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
+    GIT_TAG master
+
+    CMAKE_ARGS -DCUTLASS_ENABLE_TESTS=OFF
+    CTEST_UPDATE_COMMAND ""
+    INSTALL_COMMAND ""
+)
+ExternalProject_Get_Property(cutlass source_dir binary_dir)
+
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/bintern/dependencies/include) #this is the line we change if we want to swap to terntern/mma
 
-
-
-include_directories(${CMAKE_SOURCE_DIR}/cutlass/include)
-include_directories(${CMAKE_SOURCE_DIR}/cutlass)
 
 # Source files
 set(SOURCES
@@ -30,17 +40,19 @@ ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/random_init.cpp
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/constructors.cpp
 
 ${CMAKE_SOURCE_DIR}/src/main.cpp
-
 )
 
 # Add executable
-add_executable(test ${SOURCES})
+add_executable(exe ${SOURCES})
+
+# Add dependencies
+add_dependencies(exe cutlass)
 
 # Find CUDA package
 find_package(CUDA REQUIRED)
 
 # Set NVCC flags
-set_target_properties(test PROPERTIES
+set_target_properties(exe PROPERTIES
     LINKER_LANGUAGE CUDA
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_ARCHITECTURES "80" #"60;61;70;75;80"
@@ -51,11 +63,11 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")   # CUDA Debug
 
 # Define a custom target that runs the executable
 add_custom_target(run
-    COMMAND $<TARGET_FILE:test>
-    DEPENDS test
+    COMMAND $<TARGET_FILE:exe>
+    DEPENDS exe
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Running the executable"
 )
 
-# Make the 'run' target depend on the 'test' target
-add_dependencies(run test)
+# Make the 'run' target depend on the 'exe' target
+add_dependencies(run exe)
