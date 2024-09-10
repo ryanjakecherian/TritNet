@@ -1,21 +1,21 @@
 # Ignore build directory
-# /build/
+/build/
 
 # Ignore CMake generated files
-# CMakeFiles/
-# CMakeCache.txt
+CMakeFiles/
+CMakeCache.txt
 
 # Ignore CMake's output files
-# *.o
-# *.so
-# *.a
-# *.lib
-# *.dll
-# *.exe
-# *.vcxproj
-# *.xcodeproj
-# Makefile
-# cmake_install.cmake
+*.o
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.vcxproj
+*.xcodeproj
+Makefile
+cmake_install.cmake
 
 # Ignore cutlass repo
 /cutlass/
