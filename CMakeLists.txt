@@ -2,26 +2,23 @@
 # $ cmake ..
 # $ make run
 
-## NOTE IF THIS CMAKE BUILD SYSTEM IS BEING ANNOYING, JUST RUN THIS:
-
-
 cmake_minimum_required(VERSION 3.10)
 project(tritnet LANGUAGES CXX CUDA)
 
+#
+                                # External dependencies (CUTLASS)
+                                # include(ExternalProject)
+                                # ExternalProject_Add(
+                                #     cutlass
+                                #     GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
+                                #     GIT_TAG main
 
-# External dependencies (CUTLASS)
-include(ExternalProject)
-ExternalProject_Add(
-    cutlass
-    GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
-    GIT_TAG main
-
-    CMAKE_ARGS -DCUTLASS_ENABLE_TESTS=OFF
-    CTEST_UPDATE_COMMAND ""
-    INSTALL_COMMAND ""
-)
-ExternalProject_Get_Property(cutlass source_dir binary_dir)
-
+                                #     CMAKE_ARGS -DCUTLASS_ENABLE_TESTS=OFF -DCUTLASS_UNITY_BUILD_ENABLED=ON -DCUTLASS_NVCC_ARCHS=80a
+                                #     CTEST_UPDATE_COMMAND ""
+                                #     INSTALL_COMMAND ""
+                                # )
+                                # ExternalProject_Get_Property(cutlass source_dir binary_dir)
+#
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -45,8 +42,10 @@ ${CMAKE_SOURCE_DIR}/src/main.cpp
 # Add executable
 add_executable(exe ${SOURCES})
 
-# Add dependencies
-add_dependencies(exe cutlass)
+#
+                                # Add dependencies
+                                # add_dependencies(exe cutlass)
+#
 
 # Find CUDA package
 find_package(CUDA REQUIRED)
