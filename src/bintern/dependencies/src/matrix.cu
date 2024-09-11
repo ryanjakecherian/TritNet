@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <stdlib.h>
 #include <ctime>
+#include <random>
 
 #include "matrix.hpp"
 
@@ -176,6 +177,22 @@ void matrix<T>::print(){
         std::cout<<" ";
     }
     std::cout<<")"<<std::endl;
+}
+
+template<typename T>
+void matrix<T>::random_init(){
+    static std::default_random_engine engine(static_cast<unsigned int>(std::time(nullptr)));  //the static keyword isnt particularly efficient here, as this instruction will be read each time random_init() is called, and then a decision made based on whether its been read before. There is probably a better alternative, but this part is not time critical. Also, this is fine for initialising an individual matrix. For initialising a group, its better to do the more optimal function (see random_init.cpp [line 22])
+    std::uniform_int_distribution<int>distribution(0, (1<<WORD_SIZE) - 1);
+
+    for(int i=0; i<size; i++){
+
+        head_flat[i] = distribution(engine);
+        
+    }
+
+    std::cout<<"Matrix initialised to random values from 0 to "<< (1<<WORD_SIZE) - 1 << ":"<<std::endl;
+    print();
+
 }
 //--------------
 

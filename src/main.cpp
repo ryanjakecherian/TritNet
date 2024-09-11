@@ -1,6 +1,6 @@
 #include "TritNet.hpp"
-#include <cuda_runtime.h>
 
+#include <cuda_runtime.h>
 #include <iostream> //for debug
 
 int main() {
@@ -16,26 +16,31 @@ int main() {
 
  //========== MAIN PROGRAM ===============
 
-    int input_dim = 2;
-    int output_dim = 2;
+    //params
+    int input_dim = 4;
+    int output_dim = 4;
     int depth = 1;                      //number of hidden layers.
-    int hidden_layers[1]={4};           //dimensions of hidden layers.
+    int hidden_layers[1]={8};           //dimensions of hidden layers.
 
-    TritNet network = TritNet(input_dim, output_dim, depth, hidden_layers); 
-    // constructor constructs all the weight matrices for each layer. Here, there will be 3 matrices as there are 4 layers in total (2 hidden).
+    int batch_size = 4;                 //number of samples per batch.
+
+    //set-up network
+    TritNet network = TritNet(input_dim, output_dim, depth, hidden_layers); // constructor constructs all the weight matrices for each layer. Here, there will be 3 matrices as there are 4 layers in total (2 hidden).
     network.random_init();
 
-    activations input_batch = activations(4, input_dim/WORD_SIZE);
-    input_batch.A(1,1) = 1;
-    input_batch.A(2,1) = 0;
-    input_batch.A(3,1) = 1;
-    input_batch.A(4,1) = 1;
-    input_batch.A.print();  
-    
+    //random input
+    activations input_batch = activations(batch_size, input_dim/WORD_SIZE);
+    std::cout<<"Initialising input activations batch to random values..."<<std::endl;
+    input_batch.A.random_init();
+    std::cout<<std::endl<<std::endl<<"_____________________"<<std::endl;
 
+    //forward pass
     network.forward_pass(input_batch);  // This is where the segfault is coming from
+    
+    //print output
+    std::cout<<"Output activations:"<<std::endl;
     network.activations_list[depth+1]->A.print(); //print final layer activations matrix
-
+    std::cout<<std::endl<<std::endl<<"_____________________"<<std::endl;
 
     //functions yet to be defined:
     

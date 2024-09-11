@@ -2,7 +2,7 @@
 #define MATRIX_HPP
 
 #undef WORD_SIZE
-#define WORD_SIZE 2
+#define WORD_SIZE 4
 
 template<typename T> // lets use int
 struct matrix{
@@ -48,6 +48,7 @@ struct matrix{
 
     // handy functions
         void print();
+        void random_init();
     //--------------
 };
 
