@@ -16,8 +16,8 @@
         ├── TritNet
         |   ├── constructors.cpp
         |   ├── forward_pass.cu
-        |   ├── fwd.cu
-        |   └── random_init.cpp
+        |   ├── propagate.cu
+        |   └── init.cpp
         |    
         └── dependencies
             ├── include
@@ -34,4 +34,4 @@
 48 directories, 75 files
 
 built with:
-tree -a > directory_structure.txt
+tree -a

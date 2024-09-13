@@ -200,7 +200,7 @@ void matrix<T>::random_init(){
 
 
 template<typename T>
-void matrix<T>::array_init(std::initializer_list<T> head){
+void matrix<T>::array_init(std::initializer_list<int> head){
     
     if(head.size() != size){
         throw std::runtime_error("Initialiser list does not match array size. Check the list you gave me!");

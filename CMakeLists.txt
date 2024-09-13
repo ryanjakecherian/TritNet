@@ -31,9 +31,9 @@ ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/matrix.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/weights.cpp 
 ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/activations.cpp
 
-${CMAKE_SOURCE_DIR}/src/bintern/TritNet/fwd.cu
+${CMAKE_SOURCE_DIR}/src/bintern/TritNet/propagate.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/forward_pass.cu
-${CMAKE_SOURCE_DIR}/src/bintern/TritNet/random_init.cpp
+${CMAKE_SOURCE_DIR}/src/bintern/TritNet/init.cpp
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/constructors.cpp
 
 ${CMAKE_SOURCE_DIR}/src/main.cpp

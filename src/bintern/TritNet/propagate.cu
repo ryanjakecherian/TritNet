@@ -24,7 +24,8 @@ __device__ bool sigma(int &a){
 template<typename T> // lets use int
 __global__ void FORWARD(T* d_A, T* d_W_plus, T* d_W_neg, T* d_c){
 
-	if (blockIdx.x < (d_n*d_p)) {
+    //the if statement is kinda pointless since, so far, our kernel launches are only launching enough blocks & threads to cover the whole matrix. so itll never go outside this region. so if statement is currently pointless.
+	if ((blockIdx.x + (d_p/d_WORD_SIZE)*blockIdx.y) < (d_n*d_p/d_WORD_SIZE)) {
 
         int thread_result = 0; //waste of an instruction... but i need this such that there is a variable which can be updated within the for loop below...
 
@@ -33,7 +34,7 @@ __global__ void FORWARD(T* d_A, T* d_W_plus, T* d_W_neg, T* d_c){
         // int W_idx = (blockIdx.x*d_WORD_SIZE + threadIdx.x)%d_p;             //blockIdx.x%d_p
 
         //new indexing:
-        int A_idx = blockIdx.y;
+        int A_idx = blockIdx.y*d_m;
         int W_idx = blockIdx.x*d_WORD_SIZE + threadIdx.x;
 
 		for(int k=0; k<d_m; k++){
@@ -44,16 +45,16 @@ __global__ void FORWARD(T* d_A, T* d_W_plus, T* d_W_neg, T* d_c){
         }
 
         //activation
-        if(sigma(thread_result)){thread_result = (1<<(d_WORD_SIZE-1-threadIdx.x));} else{thread_result = 0;}     //top element as MSB: 2^(word_size-threadIdx.x). Top element as LSB: (2^threadIdx.x).
+        if(sigma(thread_result)){thread_result = (1<<(d_WORD_SIZE-1-threadIdx.x));} else{thread_result = 0;}     //left-most bit as MSB: 2^(word_size-threadIdx.x). left-most bit as LSB: (2^threadIdx.x).
         
         //compression (effectively reduction)
         //now we can replace the line below with a reduction algorithm:
-		atomicOr(&(d_c[blockIdx.x]),  thread_result);                                   //apparently atomicOr only works on 32bits - 4 byte ints.
+		atomicOr(&(d_c[blockIdx.x + (d_p/d_WORD_SIZE)*blockIdx.y]),  thread_result);                                   //apparently atomicOr only works on 32bits - 4 byte ints.
 	}
 
 }
 
-void TritNet::fwd(int i){ //pytorch and tensorflow convention is Y = X W because it is more efficient to store each individual image as a row, than as a column.
+void TritNet::propagate_layer(int i){ //pytorch and tensorflow convention is Y = X W because it is more efficient to store each individual image as a row, than as a column.
     //is there potential to optimise away all this pointer dereferencing?
 
     int m = activations_list[i]->A.cols;
@@ -77,15 +78,15 @@ void TritNet::fwd(int i){ //pytorch and tensorflow convention is Y = X W because
     
     int *d_A, *d_W_plus, *d_W_neg, *d_c;
     
-    if (cudaSuccess!= cudaMalloc(&d_A, activations_list[i]->A.bit_size) ) {throw std::runtime_error("CUDA memory allocation failed");};
-    if (cudaSuccess!= cudaMalloc(&d_W_plus, weights_list[i]->W_plus.bit_size) ) {throw std::runtime_error("CUDA memory allocation failed");};
-    if (cudaSuccess!= cudaMalloc(&d_W_neg , weights_list[i]->W_plus.bit_size) ) {throw std::runtime_error("CUDA memory allocation failed");}; //because w_plus and w_neg have the same size
-    if (cudaSuccess!= cudaMalloc(&d_c, activations_list[i+1]->A.bit_size) ) {throw std::runtime_error("CUDA memory allocation failed");};
+    if (cudaSuccess!= cudaMalloc(&d_A, activations_list[i]->A.byte_size) ) {throw std::runtime_error("CUDA memory allocation failed");};
+    if (cudaSuccess!= cudaMalloc(&d_W_plus, weights_list[i]->W_plus.byte_size) ) {throw std::runtime_error("CUDA memory allocation failed");};
+    if (cudaSuccess!= cudaMalloc(&d_W_neg , weights_list[i]->W_plus.byte_size) ) {throw std::runtime_error("CUDA memory allocation failed");}; //because w_plus and w_neg have the same size
+    if (cudaSuccess!= cudaMalloc(&d_c, activations_list[i+1]->A.byte_size) ) {throw std::runtime_error("CUDA memory allocation failed");};
 
-    if (cudaSuccess!= cudaMemcpy(d_A, activations_list[i]->A.head_flat, activations_list[i]->A.bit_size, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
-    if (cudaSuccess!= cudaMemcpy(d_W_plus, weights_list[i]->W_plus.head_flat, weights_list[i]->W_plus.bit_size, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
-    if (cudaSuccess!= cudaMemcpy(d_W_neg , weights_list[i]->W_neg .head_flat, weights_list[i]->W_plus.bit_size, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");}; //because w_plus and w_neg have the same size
-    if (cudaSuccess!= cudaMemset(d_c, 0, activations_list[i+1]->A.bit_size) ) {throw std::runtime_error("CUDA memcpy failed");};
+    if (cudaSuccess!= cudaMemcpy(d_A, activations_list[i]->A.head_flat, activations_list[i]->A.byte_size, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
+    if (cudaSuccess!= cudaMemcpy(d_W_plus, weights_list[i]->W_plus.head_flat, weights_list[i]->W_plus.byte_size, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
+    if (cudaSuccess!= cudaMemcpy(d_W_neg , weights_list[i]->W_neg .head_flat, weights_list[i]->W_plus.byte_size, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");}; //because w_plus and w_neg have the same size
+    if (cudaSuccess!= cudaMemset(d_c, 0, activations_list[i+1]->A.byte_size) ) {throw std::runtime_error("CUDA memcpy failed");};
 
 
 
@@ -99,7 +100,7 @@ void TritNet::fwd(int i){ //pytorch and tensorflow convention is Y = X W because
     cudaFree(d_W_plus);
     cudaFree(d_W_neg);
     cudaFree(d_A);
-    cudaMemcpy(activations_list[i+1]->A.head_flat, d_c, activations_list[i+1]->A.bit_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(activations_list[i+1]->A.head_flat, d_c, activations_list[i+1]->A.byte_size, cudaMemcpyDeviceToHost);
     cudaFree(d_c);
 
     return;

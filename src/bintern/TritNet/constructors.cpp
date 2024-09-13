@@ -6,14 +6,14 @@ TritNet::TritNet() {
 
 }
 
-TritNet::TritNet(int input_dim, int output_dim, int depth, int* hidden_layers):depth(depth){
+TritNet::TritNet(int input_dim, int output_dim, int depth, int* hidden_layers):depth(depth){    // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
 
     this->weights_list = new weights*[depth+1];             //can i avoid using the new keyword here?
     this->activations_list = new activations*[depth+2];
     
     weights_list[0] = new weights(input_dim/WORD_SIZE, hidden_layers[0]);
     for(int i = 1; i<depth; i++) {
-        weights_list[i] = new weights(hidden_layers[i]/WORD_SIZE, hidden_layers[i+1]);
+        weights_list[i] = new weights(hidden_layers[i-1]/WORD_SIZE, hidden_layers[i]);
     } 
     weights_list[depth] = new weights(hidden_layers[depth-1]/WORD_SIZE, output_dim);
 }

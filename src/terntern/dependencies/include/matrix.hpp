@@ -52,7 +52,7 @@ struct matrix{
     // handy functions
         void print();
         void random_init();
-        void array_init(std::initializer_list<T> head);
+        void array_init(std::initializer_list<int> head);
     //--------------
 };
 
