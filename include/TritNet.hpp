@@ -12,7 +12,7 @@ class TritNet{
         TritNet(int input_dim, int output_dim, int depth,int* hidden_layers);   // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
         
         void random_init();
-        void array_init(int*** weight_init);
+        void array_init(int* input);
 
         void forward_pass(activations& input_batch);
         void propagate_layer(int i);  //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
@@ -25,10 +25,26 @@ class TritNet{
         void bp(int i); //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
 
         //fields
+        int batch_samples;
+
         int depth;  //# of hidden layers
+        int* layers;
+
+        int** W_ptrs;
+        int* W_sizes;
+        int* W_full;
+        
+        int** A_ptrs;
+        int* W_sizes;
+        int* A_full;
+        
+        int W_size=0;
+        int A_size_divbatchsize=0;
+
         weights** weights_list;
         activations** activations_list;
-        int batch_samples;
+
+
 
 };
 
