@@ -32,7 +32,7 @@ set(SOURCES
 # ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/activations.cpp
 
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/prop_kernel.cu
-${CMAKE_SOURCE_DIR}/src/bintern/TritNet/propagate.cu
+${CMAKE_SOURCE_DIR}/src/bintern/TritNet/prop_layer.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/forward_pass.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/init.cpp
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/constructors.cpp

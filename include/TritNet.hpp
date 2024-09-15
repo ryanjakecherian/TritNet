@@ -2,7 +2,7 @@
 #define TRITNET_HPP
 
 #undef WORD_SIZE
-#define WORD_SIZE 2
+#define WORD_SIZE 32
 
 #include <cuda_runtime.h>
 
@@ -15,9 +15,10 @@ class TritNet{
         TritNet(int input_dim, int output_dim, int depth,int* hidden_layers);   // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
         
         void random_init();
-        void array_init(int* weight_init);
+        void copy_init(T* original);
 
         void forward_pass(int batch_samples, T* &input_batch);
+        void forward_pass_debug(int batch_samples, T* &input_batch, bool multistream);
         void propagate_layer(int i);  //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
 
 
@@ -44,10 +45,11 @@ __global__ void propagate(T* d_A, T* d_W, T* d_c);
 
 //handy functions
 template<typename T>
-void randomise(T* arr, int n, int m);
+void randomise(T* arr, int size);
 template<typename T>
-void print(T* arr, int n, int m);
-
+void print(T* arr, int size);
+template<typename T>
+void copy_array(T* arr, int size, T* original, int idx);
 //this instantiation is just to prevent linker errors due to this being an implementation file for a templated class - https://stackoverflow.com/a/495056/23298718
 template class TritNet<int>;
 
