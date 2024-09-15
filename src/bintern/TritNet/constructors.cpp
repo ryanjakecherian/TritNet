@@ -2,43 +2,73 @@
 
 #include <iostream>
 
-TritNet::TritNet() {
+template<typename T>
+TritNet<T>::TritNet() {
 
 }
 
-TritNet::TritNet(int input_dim, int output_dim, int depth, int* hidden_layers):depth(depth){    // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
+template<typename T>
+TritNet<T>::TritNet(int input_dim, int output_dim, int depth, int* hidden_layers):depth(depth){    // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
 
-    this->weights_list = new weights*[depth+1];             //can i avoid using the new keyword here?
-    this->activations_list = new activations*[depth+2];
+    if (depth < 1) {
+        throw std::invalid_argument("Network construction requires at least one hidden layer. Zero-depth network not implemented.");
+    }
     
-    weights_list[0] = new weights(input_dim/WORD_SIZE, hidden_layers[0]);
+    layers = new int[depth+2];
+    W_list = new T*[depth+1];
+    A_list = new T*[depth+2];
+    W_bytesizes = new int[depth+1];
+    A_bytesizes = new int[depth+2];
+    W_max = 0;
+    A_max = 0;
+
+    
+
+    if (input_dim%WORD_SIZE != 0) {std::cout<<input_dim<<std::endl;   throw std::invalid_argument("Matrix class needs zero-padding functionality");    }
+    layers[0] = input_dim/WORD_SIZE;
+    A_bytesizes[0] = sizeof(T)*layers[0];
+    if (A_bytesizes[0]>A_max) {A_max = A_bytesizes[0];};
+    W_list[0] = new T[(2 * input_dim/WORD_SIZE * hidden_layers[0])+1];
+    W_list[0][0] = hidden_layers[0];
+    W_bytesizes[0] = sizeof(T) * (2 * input_dim/WORD_SIZE * hidden_layers[0] +1);
+    if (W_bytesizes[0]>W_max) {W_max = W_bytesizes[0];};
+    
+
     for(int i = 1; i<depth; i++) {
-        weights_list[i] = new weights(hidden_layers[i-1]/WORD_SIZE, hidden_layers[i]);
+        if (hidden_layers[i-1]%WORD_SIZE != 0) {std::cout<<hidden_layers[i-1]<<std::endl;   throw std::invalid_argument("Matrix class needs zero-padding functionality");    }
+        layers[i] = hidden_layers[i-1]/WORD_SIZE;
+        A_bytesizes[i] = sizeof(T)*layers[i];
+        if (A_bytesizes[i]>A_max) {A_max = A_bytesizes[i];};
+        W_list[i] = new T[2 * hidden_layers[i-1]/WORD_SIZE * hidden_layers[i]];
+        W_list[i][0] = hidden_layers[i];
+        W_bytesizes[i] = sizeof(T) * (2 * hidden_layers[i-1]/WORD_SIZE * hidden_layers[i]+1);
+        if (W_bytesizes[i]>W_max) {W_max = W_bytesizes[i];};
     } 
-    weights_list[depth] = new weights(hidden_layers[depth-1]/WORD_SIZE, output_dim);
+    
+
+    if (hidden_layers[depth-1]%WORD_SIZE != 0) {std::cout<<hidden_layers[depth-1]<<std::endl;   throw std::invalid_argument("Matrix class needs zero-padding functionality");    }
+    layers[depth] = hidden_layers[depth-1]/WORD_SIZE;
+    A_bytesizes[depth] = sizeof(T)*layers[depth];
+    if (A_bytesizes[depth]>A_max) {A_max = A_bytesizes[depth];};
+    W_list[depth] = new T[2 * hidden_layers[depth-1]/WORD_SIZE * output_dim];
+    W_list[depth][0] = output_dim;
+    W_bytesizes[depth] = sizeof(T) * (2 * hidden_layers[depth-1]/WORD_SIZE * output_dim+1);
+    if (W_bytesizes[depth]>W_max) {W_max = W_bytesizes[depth];};
+    
+
+
+    if (output_dim%WORD_SIZE != 0) {std::cout<<output_dim<<std::endl;   throw std::invalid_argument("Matrix class needs zero-padding functionality");    }
+    layers[depth+1] = output_dim/WORD_SIZE;
+    A_bytesizes[depth+1] = sizeof(T)*layers[depth+1];
+    if (A_bytesizes[depth+1]>A_max) {A_max = A_bytesizes[depth+1];};
+
+    //TO DO: MAKE THIS PINNED (PAGE-LOCKED) MEMORY.
+
+    
+    // DEBUG:
+    std::cout<<"The largest layer is of size: "<<A_max<<"*batch_size bytes"<<std::endl;
+    std::cout<<"The largest weights array is of size: "<<W_max<<" bytes"<<std::endl;
 }
-
-
-// BELOW IS A STATIC VERSION OF THE CONSTRUCTOR.
-// This doesnt work because the pointers become dangling, because all the weights were declared locally, and then go out of scope when the constructor finishes, and thus are deleted.
-
-    // TritNet::TritNet(int input_dim, int output_dim, int depth, int* hidden_layers):depth(depth){
-
-    //     weights* weights_list[depth];             //pointer to an array of pointers to matrices, of size depth+2
-    //     activations* activations_list[depth+1];
-
-    //     bintern_weights a(input_dim, hidden_layers[0]);
-    //     weights_list[0] = &a;  //can i avoid using the new keyword here?
-    //     for(int i = 1; depth-1; i++) {
-    //         bintern_weights a(hidden_layers[i], hidden_layers[i+1]);
-    //         weights_list[i] = &a;
-    //     } 
-    //     bintern_weights a(hidden_layers[depth-1], output_dim);
-    //     weights_list[depth] = &a;
-
-    // }
-
-//
 
 
 //NEED TO DEFINE A DESTRUCTOR WHICH DESTRUCTS ALL THESE FKN WEIGHTS AND ACTIVATIONS

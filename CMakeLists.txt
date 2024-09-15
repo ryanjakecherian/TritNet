@@ -27,10 +27,11 @@ include_directories(${CMAKE_SOURCE_DIR}/src/bintern/dependencies/include) #this 
 
 # Source files
 set(SOURCES
-${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/matrix.cu
-${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/weights.cpp 
-${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/activations.cpp
+# ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/matrix.cu
+# ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/weights.cpp 
+# ${CMAKE_SOURCE_DIR}/src/bintern/dependencies/src/activations.cpp
 
+${CMAKE_SOURCE_DIR}/src/bintern/TritNet/prop_kernel.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/propagate.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/forward_pass.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/init.cpp

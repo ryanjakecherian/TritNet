@@ -17,17 +17,17 @@ int main() {
  //========== MAIN PROGRAM ===============
 
     //params
-    int input_dim = 9;                  //                              NOTE: MUST BE MULTIPLE OF THE WORD_SIZE (zero-padding functionality not implemented yet)
-    int output_dim = 6;                 //                              NOTE: MUST BE MULTIPLE OF THE WORD_SIZE (zero-padding functionality not implemented yet)
-    int depth = 2;                      //number of hidden layers.
-    int hidden_layers[depth]={12, 18};  //dimensions of hidden layers.  NOTE: MUST BE MULTIPLES OF THE WORD_SIZE (zero-padding functionality not implemented yet)
+    int input_dim = 8;                  //                              NOTE: MUST BE MULTIPLE OF THE WORD_SIZE (zero-padding functionality not implemented yet)
+    int output_dim = 4;                 //                              NOTE: MUST BE MULTIPLE OF THE WORD_SIZE (zero-padding functionality not implemented yet)
+    int depth = 3;                      //number of hidden layers.
+    int hidden_layers[depth]={4, 2, 2};        //dimensions of hidden layers.  NOTE: MUST BE MULTIPLES OF THE WORD_SIZE (zero-padding functionality not implemented yet)
+                                        //1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
 
     int batch_size = 4;                 //number of samples per batch.
 
 
-
     // Set-up network
-    TritNet network = TritNet(input_dim, output_dim, depth, hidden_layers);
+    TritNet network = TritNet<int>(input_dim, output_dim, depth, hidden_layers);
 
 
     // #########################################################################################
@@ -38,9 +38,10 @@ int main() {
         //
 
         //input init
-            activations input_batch = activations(batch_size, input_dim/WORD_SIZE);
+            int* input_batch = new int[batch_size*input_dim/WORD_SIZE];
             std::cout<<"Initialising input activations batch to random values..."<<std::endl;
-            input_batch.A.random_init();
+            randomise<int>(input_batch, batch_size, input_dim/WORD_SIZE);
+            print<int>(input_batch, batch_size, input_dim/WORD_SIZE);
             std::cout<<std::endl<<std::endl<<"_____________________"<<std::endl;
         //
 
@@ -74,7 +75,7 @@ int main() {
 
 
     //forward pass
-    network.forward_pass(input_batch);  
+    network.forward_pass(batch_size, input_batch);  
 
 
     // //debug
@@ -83,7 +84,7 @@ int main() {
 
     //print final layer activations matrix
     std::cout<<"Output activations:"<<std::endl;
-    network.activations_list[depth+1]->A.print();
+    print(network.A_list[depth+1], batch_size, network.layers[depth+1]);
     std::cout<<std::endl<<std::endl<<"_____________________"<<std::endl;
 
 
