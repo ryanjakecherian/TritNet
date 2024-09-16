@@ -2,9 +2,10 @@
 #define TRITNET_HPP
 
 #undef WORD_SIZE
-#define WORD_SIZE 32
+#define WORD_SIZE 32        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
 
 #include <cuda_runtime.h>
+#include <stdint.h>
 
 template<typename T>
 class TritNet{
@@ -47,10 +48,10 @@ __global__ void propagate(T* d_A, T* d_W, T* d_c);
 template<typename T>
 void randomise(T* arr, int size);
 template<typename T>
-void print(T* arr, int size);
+void print(T* arr, int n, int m);
 template<typename T>
 void copy_array(T* arr, int size, T* original, int idx);
 //this instantiation is just to prevent linker errors due to this being an implementation file for a templated class - https://stackoverflow.com/a/495056/23298718
-template class TritNet<int>;
+template class TritNet<uint32_t>;
 
 #endif

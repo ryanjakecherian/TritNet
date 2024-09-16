@@ -14,8 +14,7 @@ extern __device__ int d_p;
 
 
 //toy activation function - to be replaced by actual function. this could even be placed within the kernel itself, without the need for passing the tid parameter into another function!!
-template<typename T>
-__device__ bool sigma(T &a){
+__device__ bool sigma(int &a){
 	if (a < 0) {return true;}
 	return 0;
 }
@@ -53,4 +52,4 @@ __global__ void propagate(T* d_A, T* d_W, T* d_c){
 
 
 //this instantiation is just to prevent linker errors due to this being an implementation file for a templated class - https://stackoverflow.com/a/495056/23298718
-template __global__ void propagate<int>(int* d_A, int* d_W, int* d_O);
+template __global__ void propagate<uint32_t>(uint32_t* d_A, uint32_t* d_W, uint32_t* d_O);

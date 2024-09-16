@@ -66,8 +66,8 @@ TritNet<T>::TritNet(int input_dim, int output_dim, int depth, int* hidden_layers
 
     
     // DEBUG:
-    std::cout<<"The largest layer is of size: "<<A_max<<"*batch_size bytes"<<std::endl;
-    std::cout<<"The largest weights array is of size: "<<W_max<<" bytes"<<std::endl;
+    // std::cout<<"The largest layer is of size: "<<A_max<<"*batch_size bytes"<<std::endl;
+    // std::cout<<"The largest weights array is of size: "<<W_max<<" bytes"<<std::endl;
 }
 
 
