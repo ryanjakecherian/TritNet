@@ -2,7 +2,7 @@
 #define TRITNET_HPP
 
 #undef WORD_SIZE
-#define WORD_SIZE 32        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
+#define WORD_SIZE 2        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
 
 #include <cuda_runtime.h>
 #include <stdint.h>
@@ -18,8 +18,7 @@ class TritNet{
         void random_init();
         void copy_init(T* original);
 
-        void forward_pass(int batch_samples, T* &input_batch);
-        void forward_pass_debug(int batch_samples, T* &input_batch, bool multistream);
+        void forward_pass(int batch_samples, T* &input_batch, bool multistream);
         void propagate_layer(int i);  //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
 
 

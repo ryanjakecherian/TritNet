@@ -71,12 +71,12 @@ void TritNet<T>::random_init(){
             std::cout<<"W_{"<<n<<"}"<<std::endl;
 
             std::cout<<"W_pos"<<std::endl;
-            randomise<T>(W_list[n]+1,layers[n]*layers[n+1]);        //hifted by one since W[n][0] always holds its column dimension!
-            // print<T>(W_list[n]+1,layers[n],layers[n+1]);
+            randomise<T>(W_list[n]+1,layers[n]*layers[n+1]*WORD_SIZE);        //hifted by 1 since W[n][0] always holds its column dimension!
+            print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);
 
             std::cout<<"W_neg"<<std::endl;
-            randomise<T>(W_list[n]+1+(layers[n]*layers[n+1]),layers[n]*layers[n+1]);
-            // print<T>(W_list[n]+1+(layers[n]*layers[n+1]),layers[n],layers[n+1]);
+            randomise<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n]*layers[n+1]*WORD_SIZE);
+            print<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n],layers[n+1]*WORD_SIZE);
 
             std::cout<<std::endl;
         }
@@ -90,30 +90,28 @@ void TritNet<T>::random_init(){
 template<typename T>
 void TritNet<T>::copy_init(T* original){
 
-    // THIS IS THE MORE OBJECT ORIENTED INITIALISATION METHOD:
+    std::cout<<"Initialising weight matrices from lists provided..."<<std::endl<<std::endl;
+    int idx = 0;
+    for(int n=0;n<=depth;n++){
 
-        std::cout<<"Initialising weight matrices from lists provided..."<<std::endl<<std::endl;
-        int idx = 0;
-        for(int n=0;n<=depth;n++){
-            idx +=  layers[n]*layers[n+1];
+        std::cout<<"W_{"<<n<<"}"<<std::endl;
+        
+        std::cout<<"W_pos"<<std::endl;
+        copy_array<T>(W_list[n]+1, layers[n]*layers[n+1]*WORD_SIZE, original, idx);           //shifted by 1 since W[n][0] always holds its column dimension! 
+        print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);
 
-            std::cout<<"W_{"<<n<<"}"<<std::endl;
+        idx +=  layers[n]*layers[n+1]*WORD_SIZE;
 
-
-            
-            std::cout<<"W_pos"<<std::endl;
-            copy_array<T>(W_list[n]+1, layers[n]*layers[n+1], original, idx);           //shifted by one since W[n][0] always holds its column dimension! 
-            // print<T>(W_list[n]+1,layers[n],layers[n+1]);
-
-            std::cout<<"W_neg"<<std::endl;
-            copy_array<T>(W_list[n]+1+(layers[n]*layers[n+1]), layers[n]*layers[n+1], original, idx);
-            // print<T>(W_list[n]+1+(layers[n]*layers[n+1]),layers[n],layers[n+1]);
+        std::cout<<"W_neg"<<std::endl;
+        copy_array<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE), layers[n]*layers[n+1]*WORD_SIZE, original, idx);
+        print<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n],layers[n+1]*WORD_SIZE);
+        
+        std::cout<<std::endl;
 
 
-            std::cout<<std::endl;
-        }
+        idx +=  layers[n]*layers[n+1]*WORD_SIZE;
+    }
 
-        std::cout<<"Weights initialised."<<std::endl<<std::endl<<std::endl<<"_____________________"<<std::endl;
+    std::cout<<"Weights initialised."<<std::endl<<std::endl<<std::endl<<"_____________________"<<std::endl;
 
-    //
 }

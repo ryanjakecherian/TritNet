@@ -19,9 +19,9 @@ void TritNet<T>::propagate_layer(int i){ //pytorch and tensorflow convention is 
     if (cudaSuccess!= cudaMemcpy(d_W, W_list[i], W_bytesizes[i], cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
     
     if (cudaSuccess!= cudaMalloc(&d_O, n*A_bytesizes[i+1]) ) {throw std::runtime_error("CUDA memory allocation failed");};         
-    if (cudaSuccess!= cudaMemset(d_O, 0, n*A_bytesizes[i+1]) ) {throw std::runtime_error("CUDA memcpy failed");};
+    if (cudaSuccess!= cudaMemset(d_O, 0, n*A_bytesizes[i+1]) ) {throw std::runtime_error("CUDA memset failed");};
     dim3 blockDim = WORD_SIZE;                 
-    dim3 gridDim(layers[i+1]/WORD_SIZE, n);       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1
+    dim3 gridDim(layers[i+1], n);       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1
 
     propagate<T><<<gridDim,blockDim>>>(d_A, d_W, d_O);
     

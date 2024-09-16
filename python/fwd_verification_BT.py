@@ -3,7 +3,7 @@
 import random
 import time
 
-WORD_SIZE = 32
+WORD_SIZE = 2
 
 # activation
 def sigma(A):
@@ -48,8 +48,8 @@ def convW_BT(weights):
     
 # convert A => A_bin 
 def convA_BT(input):
-    A_bin = [0] * batch_size*layers[0]
-    for i in range (batch_size*layers[0]):
+    A_bin = [0] * len(input)
+    for i in range (len(input)):
         if (input[i] == -1) :
             A_bin[i] = 1
 
@@ -85,10 +85,10 @@ def comp_vert(arr,n,m,WORD_SIZE):
 # NET PARAMS
 ########################
 
-input_dim = 32                  
-output_dim = 32
-depth = 6
-hidden_layers = [64, 64, 64, 64, 64, 64]       #layers must be divisable by word_size
+input_dim = 4                
+output_dim = 4
+depth = 1
+hidden_layers = [4]       #layers must be divisable by word_size
 batch_size = 4
 
 ########################
@@ -120,10 +120,17 @@ start_time = time.time()
 output = MatMul(input, weights[0], batch_size, layers[0], layers[1])
 output = sigma(output)
 
+# print first layer output for comparison with tritnet
+first_layer = convA_BT(output)
+first_layer = comp_hori(first_layer,batch_size,layers[1],WORD_SIZE)
+print("first layer output for comparison with tritnet:")
+print(first_layer)
+
 for i in range(1, len(layers)-1):
     output = MatMul(output, weights[i], batch_size, layers[i], layers[i+1])
     output = sigma(output)
 
+print("final output:")
 print(output)
 
 end_time = time.time()

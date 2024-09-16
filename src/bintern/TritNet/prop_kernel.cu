@@ -28,7 +28,7 @@ __global__ void propagate(T* d_A, T* d_W, T* d_c){
 
     //new indexing:
     int A_idx = blockIdx.y*d_m;
-    int W_idx = blockIdx.x*d_WORD_SIZE + threadIdx.x;
+    int W_idx = 1 + blockIdx.x*d_WORD_SIZE + threadIdx.x;
     int W_neg_offset = d_m*d_p;
 
     for(int k=0; k<d_m; k++){
@@ -42,7 +42,7 @@ __global__ void propagate(T* d_A, T* d_W, T* d_c){
     if(sigma(thread_result)){thread_result = (1<<(d_WORD_SIZE-1-threadIdx.x));} else{thread_result = 0;}     //left-most bit as MSB: 2^(word_size-threadIdx.x). left-most bit as LSB: (2^threadIdx.x).
     
     //compression (effectively reduction)
-    //now we can replace the line below with a reduction algorithm:
+    //now we can replace the line below with a reduction algorithm (potentially by storing thread results in shared memory):
     atomicOr(&(d_c[blockIdx.x + (d_p/d_WORD_SIZE)*blockIdx.y]),  thread_result);
    
 
