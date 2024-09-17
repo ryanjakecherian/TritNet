@@ -19,7 +19,7 @@ class TritNet{
         void copy_init(T* original);
 
         void forward_pass(int batch_samples, T* &input_batch, bool multistream);
-        void propagate_layer(int i);  //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
+        void propagate_layer(int i, T *&d_A, T *&d_W, T *&d_O);  //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
 
 
         int* loss_calc(int* output_batch, int* true_outputs);

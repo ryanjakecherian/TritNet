@@ -4,6 +4,7 @@
 #include <cuda.h>
 #include <stdlib.h>
 #include <ctime>
+#include <cassert> //debug
 
 using namespace std;
 
@@ -21,15 +22,15 @@ __device__ bool sigma(int &a){
 
 template<typename T> // lets use int
 __global__ void propagate(T* d_A, T* d_W, T* d_c){
-
-    d_p = d_W[0];   //should i put d_p and d_m in shared memory?
+    
+    d_p = d_W[0];   //should i put d_p and d_m in shared memory?        // also note that d_W[0] is of type T, so it is getting recast to int, since d_p is of type int.
     
     int thread_result = 0; //waste of an instruction... but i need this such that there is a variable which can be updated within the for loop below...
 
     //new indexing:
-    int A_idx = blockIdx.y*d_m;
-    int W_idx = 1 + blockIdx.x*d_WORD_SIZE + threadIdx.x;
-    int W_neg_offset = d_m*d_p;
+    int A_idx = blockIdx.y*d_m;                                 assert(A_idx < 3);
+    int W_idx = 1 + blockIdx.x*d_WORD_SIZE + threadIdx.x;       assert(W_idx < 901);
+    int W_neg_offset = d_m*d_p;                                 assert((W_idx + W_neg_offset) < 1801);
 
     for(int k=0; k<d_m; k++){
         // bitwise &, popcount, accumulate.
@@ -46,7 +47,7 @@ __global__ void propagate(T* d_A, T* d_W, T* d_c){
     atomicOr(&(d_c[blockIdx.x + (d_p/d_WORD_SIZE)*blockIdx.y]),  thread_result);
    
 
-    d_m = d_p/d_WORD_SIZE;
+    (blockIdx.x == d_n-1 && blockIdx.y == d_p/d_WORD_SIZE) ? d_m = d_p/d_WORD_SIZE : d_m = d_m; //only update d_m if its the last block
 
 }
 

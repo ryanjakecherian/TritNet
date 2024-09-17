@@ -2,8 +2,12 @@
 # generate {-1,0,1} random matrix, with appropriate size for input batch
 import random
 import time
+import sys
 
-WORD_SIZE = 2
+# Redirect print output to a file
+sys.stdout = open("output.txt", "w")
+
+WORD_SIZE = 32
 
 # activation
 def sigma(A):
@@ -85,11 +89,11 @@ def comp_vert(arr,n,m,WORD_SIZE):
 # NET PARAMS
 ########################
 
-input_dim = 4                
-output_dim = 4
+input_dim = 256              
+output_dim = 32
 depth = 1
-hidden_layers = [4]       #layers must be divisable by word_size
-batch_size = 4
+hidden_layers = [1024]       #layers must be divisable by word_size
+batch_size = 32
 
 ########################
 
@@ -202,7 +206,11 @@ print(A_bin)
 
 ########################
 
+# Close the file when done
+sys.stdout.close()
 
+# Optional: Restore print to the console (if needed after the redirection)
+sys.stdout = sys.__stdout__
 
 
 

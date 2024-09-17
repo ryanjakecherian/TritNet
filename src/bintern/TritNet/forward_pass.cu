@@ -7,7 +7,7 @@
 
 __constant__ int d_WORD_SIZE  = WORD_SIZE;
 __constant__ int d_n;
-__device__ int d_m;             
+__device__ int d_m;
 __device__ int d_p;
 
 template <typename T>
@@ -28,35 +28,29 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
                 dim3 blockDim = WORD_SIZE;   
 
 
+            // allocate buffers (of max required size) 
+                if (cudaSuccess!= cudaMalloc(&d_b1_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+                if (cudaSuccess!= cudaMalloc(&d_b2_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+                if (cudaSuccess!= cudaMalloc(&d_b1_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+                if (cudaSuccess!= cudaMalloc(&d_b2_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+                //somehow its faster to do this with one stream instead of two?? do some more testing.
+                
+
+            // H2D: A[0]
+                if (cudaSuccess!= cudaMemcpy(d_b2_A, A_list[0], n*A_bytesizes[0], cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
+            
+
             // create 2 streams
                 cudaStream_t TransferStream;
                 cudaStream_t ProcessStream;
                 cudaStreamCreate(&TransferStream);
                 cudaStreamCreate(&ProcessStream);
-            
-
-            // allocate buffers (of max required size)
-                if (cudaSuccess!= cudaMallocAsync(&d_b1_A, n*A_max, TransferStream) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
-                if (cudaSuccess!= cudaMallocAsync(&d_b2_A, n*A_max, TransferStream) ) {throw std::runtime_error("CUDA memory allocation failed");};
-                if (cudaSuccess!= cudaMallocAsync(&d_b1_W, W_max, ProcessStream) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
-                if (cudaSuccess!= cudaMallocAsync(&d_b2_W, W_max, ProcessStream) ) {throw std::runtime_error("CUDA memory allocation failed");};
-
-
-            // H2D: A[0]
-                if (cudaSuccess!= cudaMemcpyAsync(d_b2_A, &input_batch, n*A_bytesizes[0], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memset failed");};
-            
-
-            // synchronise
-                cudaStreamSynchronize(TransferStream);
-                cudaStreamSynchronize(ProcessStream);
-
-
 
 
 
         // LOADING: phase 1
             // H2D: W[0] and p      //S1
-                if (cudaSuccess!= cudaMemcpyAsync(d_b1_W, W_list[0], W_bytesizes[0], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memset failed");};
+                if (cudaSuccess!= cudaMemcpyAsync(d_b1_W, W_list[0], W_bytesizes[0], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
 
             // synchronise
                 cudaStreamSynchronize(TransferStream);
@@ -64,17 +58,16 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
         // LOADING: phase 2
             // H2D: W[1] and p      //S1
-                if (cudaSuccess!= cudaMemcpyAsync(d_b2_W, W_list[1], W_bytesizes[1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memset failed");};
-
+                if (cudaSuccess!= cudaMemcpyAsync(d_b2_W, W_list[1], W_bytesizes[1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
+                
             // <<<prop>>>(0)        //S2
-                if (cudaSuccess!= cudaMemset(d_b1_A, 0, n*A_bytesizes[1]) ) {throw std::runtime_error("CUDA memset failed");};
+                if (cudaSuccess!= cudaMemsetAsync(d_b1_A, 0, n*A_bytesizes[1], ProcessStream) ) {throw std::runtime_error("CUDA memset failed");};
                 dim3 gridDim(layers[0+1], n);       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1    where p is the #cols of the next layer 
                 propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b2_A, d_b1_W, d_b1_A);
                 
             // synchronise
                 cudaStreamSynchronize(TransferStream);
                 cudaStreamSynchronize(ProcessStream);
-
 
 
 
@@ -85,7 +78,7 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
                 if (i%2 == 1){
 
                     // H2D: W[i+1] and p    //S1
-                        if (cudaSuccess!= cudaMemcpyAsync(d_b1_W, W_list[i+1], W_bytesizes[i+1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memset failed");};
+                        if (cudaSuccess!= cudaMemcpyAsync(d_b1_W, W_list[i+1], W_bytesizes[i+1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
 
                     // D2H: A[i]            //S1
                         A_list[i] = new T[n*layers[i]];
@@ -106,7 +99,7 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
                 else{
                     // H2D: W[i+1] and p    //S1
-                        if (cudaSuccess!= cudaMemcpyAsync(d_b2_W, W_list[i+1], W_bytesizes[i+1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memset failed");};
+                        if (cudaSuccess!= cudaMemcpyAsync(d_b2_W, W_list[i+1], W_bytesizes[i+1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
                     
                     // D2H: A[i]            //S1
                         A_list[i] = new T[n*layers[i]];
@@ -128,17 +121,16 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
 
 
-
         // DELOADING
         if ( (depth)%2 == 1) {
 
             // DELOADING: phase 1
                 // D2H: A[depth]        //S1
                     A_list[depth] = new T[n*layers[depth]];
-                    cudaMemcpyAsync(A_list[depth], d_b1_A, n*A_bytesizes[depth], cudaMemcpyDeviceToHost, TransferStream);
+                    if (cudaSuccess!=cudaMemcpyAsync(A_list[depth], d_b1_A, n*A_bytesizes[depth], cudaMemcpyDeviceToHost, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
 
                 // <<<prop>>>(depth)    //S2
-                    if (cudaSuccess!= cudaMemset(d_b2_A, 0, n*A_bytesizes[depth+1]) ) {throw std::runtime_error("CUDA memset failed");};
+                    if (cudaSuccess!= cudaMemsetAsync(d_b2_A, 0, n*A_bytesizes[depth+1], ProcessStream) ) {throw std::runtime_error("CUDA memset failed");};
                     gridDim.x = layers[depth+1];       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1    where p is the #cols of the next layer 
                     propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b1_A, d_b2_W, d_b2_A);
                     
@@ -217,10 +209,20 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
         cudaMemcpyToSymbol(d_n, &n, sizeof(int));
         cudaMemcpyToSymbol(d_m, &m, sizeof(int));
         
+        T *d_A, *d_W, *d_O;
+        if (cudaSuccess!= cudaMalloc(&d_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+        if (cudaSuccess!= cudaMalloc(&d_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+        if (cudaSuccess!= cudaMalloc(&d_O, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+        
         for(int i = 0; i<=depth; i++){
             // std::cout<<i<<std::endl; //debug
-            propagate_layer(i);
+            propagate_layer(i, d_A, d_W, d_O);
         }
+
+        cudaFree(d_W);
+        cudaFree(d_A);
+        cudaFree(d_O);
+
 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
@@ -233,3 +235,54 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
 }
 
+
+
+// // code comparison needed for initialisation of buffer:
+// which is faster:
+
+//             // create 2 streams
+//                 cudaStream_t TransferStream;
+//                 cudaStream_t ProcessStream;
+//                 cudaStreamCreate(&TransferStream);
+//                 cudaStreamCreate(&ProcessStream);
+            
+
+//             // allocate buffers (of max required size)
+//                 if (cudaSuccess!= cudaMallocAsync(&d_b1_A, n*A_max, TransferStream) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+//                 if (cudaSuccess!= cudaMallocAsync(&d_b2_A, n*A_max, TransferStream) ) {throw std::runtime_error("CUDA memory allocation failed");};
+//                 if (cudaSuccess!= cudaMallocAsync(&d_b1_W, W_max, ProcessStream) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+//                 if (cudaSuccess!= cudaMallocAsync(&d_b2_W, W_max, ProcessStream) ) {throw std::runtime_error("CUDA memory allocation failed");};
+
+
+//             // H2D: A[0]
+//                 if (cudaSuccess!= cudaMemcpyAsync(d_b2_A, &input_batch, n*A_bytesizes[0], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memset failed");};
+            
+
+//             // synchronise
+//                 cudaStreamSynchronize(TransferStream);
+//                 cudaStreamSynchronize(ProcessStream);
+
+//             // more work...
+
+// or:
+
+
+//             // allocate buffers (of max required size) 
+//                 if (cudaSuccess!= cudaMalloc(&d_b1_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+//                 if (cudaSuccess!= cudaMalloc(&d_b2_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+//                 if (cudaSuccess!= cudaMalloc(&d_b1_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+//                 if (cudaSuccess!= cudaMalloc(&d_b2_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+//                 //somehow its faster to do this with one stream instead of two?? do some more testing.
+                
+
+//             // H2D: A[0]
+//                 if (cudaSuccess!= cudaMemcpy(d_b2_A, &input_batch, n*A_bytesizes[0], cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memset failed");};
+            
+
+//             // create 2 streams
+//                 cudaStream_t TransferStream;
+//                 cudaStream_t ProcessStream;
+//                 cudaStreamCreate(&TransferStream);
+//                 cudaStreamCreate(&ProcessStream);
+            
+//             // more work...

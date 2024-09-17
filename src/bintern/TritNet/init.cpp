@@ -98,13 +98,13 @@ void TritNet<T>::copy_init(T* original){
         
         std::cout<<"W_pos"<<std::endl;
         copy_array<T>(W_list[n]+1, layers[n]*layers[n+1]*WORD_SIZE, original, idx);           //shifted by 1 since W[n][0] always holds its column dimension! 
-        print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);
+        // print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);
 
         idx +=  layers[n]*layers[n+1]*WORD_SIZE;
 
         std::cout<<"W_neg"<<std::endl;
         copy_array<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE), layers[n]*layers[n+1]*WORD_SIZE, original, idx);
-        print<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n],layers[n+1]*WORD_SIZE);
+        // print<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n],layers[n+1]*WORD_SIZE);
         
         std::cout<<std::endl;
 
