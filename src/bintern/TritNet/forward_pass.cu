@@ -16,11 +16,9 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
     if ((multistream == true) && depth > 0) {                      //minimum depth for multistream is 1: LOADING inputs 2 weights & calcs 1 activation, and DELOADING calcs 2 activations & outputs 1 result. These 2 phases alone sum to 3 layers, i.e. a depth of 1.
         auto start = std::chrono::high_resolution_clock::now();
 
-        A_list[0] = input_batch;  
+        A_list[0] = input_batch;
         n = batch_samples;
-        int m = layers[0];  //note layers contains the compressed layer dimensions
         cudaMemcpyToSymbol(d_n, &n, sizeof(int));
-        cudaMemcpyToSymbol(d_m, &m, sizeof(int));
 
         // INITIALISE DUAL-BUFFER MULTI-STREAM SYSTEM:
             // Device pointers and block dimension                
@@ -29,15 +27,15 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
 
             // allocate buffers (of max required size) 
-                if (cudaSuccess!= cudaMalloc(&d_b1_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
-                if (cudaSuccess!= cudaMalloc(&d_b2_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+                if (cudaSuccess!= cudaMalloc(&d_b1_A, n*A_max +1) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
+                if (cudaSuccess!= cudaMalloc(&d_b2_A, n*A_max +1) ) {throw std::runtime_error("CUDA memory allocation failed");};
                 if (cudaSuccess!= cudaMalloc(&d_b1_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");}; 
                 if (cudaSuccess!= cudaMalloc(&d_b2_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
                 //somehow its faster to do this with one stream instead of two?? do some more testing.
                 
 
             // H2D: A[0]
-                if (cudaSuccess!= cudaMemcpy(d_b2_A, A_list[0], n*A_bytesizes[0], cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
+                if (cudaSuccess!= cudaMemcpy(d_b2_A, A_list[0], n*A_bytesizes[0]+1, cudaMemcpyHostToDevice) ) {throw std::runtime_error("CUDA memcpy failed");};
             
 
             // create 2 streams
@@ -61,7 +59,7 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
                 if (cudaSuccess!= cudaMemcpyAsync(d_b2_W, W_list[1], W_bytesizes[1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
                 
             // <<<prop>>>(0)        //S2
-                if (cudaSuccess!= cudaMemsetAsync(d_b1_A, 0, n*A_bytesizes[1], ProcessStream) ) {throw std::runtime_error("CUDA memset failed");};
+                if (cudaSuccess!= cudaMemsetAsync(d_b1_A, 0, n*A_bytesizes[1]+1, ProcessStream) ) {throw std::runtime_error("CUDA memset failed");};
                 dim3 gridDim(layers[0+1], n);       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1    where p is the #cols of the next layer 
                 propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b2_A, d_b1_W, d_b1_A);
                 
@@ -81,11 +79,11 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
                         if (cudaSuccess!= cudaMemcpyAsync(d_b1_W, W_list[i+1], W_bytesizes[i+1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
 
                     // D2H: A[i]            //S1
-                        A_list[i] = new T[n*layers[i]];
-                        cudaMemcpyAsync(A_list[i], d_b1_A, n*A_bytesizes[i], cudaMemcpyDeviceToHost, TransferStream);
+                        A_list[i] = new T[n*layers[i]+1]();     //this auto-initialises all to zero. FOR SOME REASON, IF I DONT INITIALISE THE LAST ELEMENT (be that thru either initialising the whole array, or just the last element), THE FIRST TIME DOING THE FORWARD PASS FAILS TO TRANSFER THE LAST ELEMENT.
+                        cudaMemcpyAsync(A_list[i], d_b1_A, n*A_bytesizes[i]+1, cudaMemcpyDeviceToHost, TransferStream);
 
                     // <<<prop>>>(i)        //S2
-                        if (cudaSuccess!= cudaMemset(d_b2_A, 0, n*A_bytesizes[i+1]) ) {throw std::runtime_error("CUDA memset failed");};
+                        if (cudaSuccess!= cudaMemset(d_b2_A, 0, n*A_bytesizes[i+1]+1) ) {throw std::runtime_error("CUDA memset failed");};
                         gridDim.x = layers[i+1];       //p is the #cols of W[i] (which is the #cols of A[i+1])
                         propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b1_A, d_b2_W, d_b2_A);
 
@@ -102,11 +100,11 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
                         if (cudaSuccess!= cudaMemcpyAsync(d_b2_W, W_list[i+1], W_bytesizes[i+1], cudaMemcpyHostToDevice, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
                     
                     // D2H: A[i]            //S1
-                        A_list[i] = new T[n*layers[i]];
-                        cudaMemcpyAsync(A_list[i], d_b2_A, n*A_bytesizes[i], cudaMemcpyDeviceToHost, TransferStream);
+                        A_list[i] = new T[n*layers[i]+1]();
+                        cudaMemcpyAsync(A_list[i], d_b2_A, n*A_bytesizes[i]+1, cudaMemcpyDeviceToHost, TransferStream);
     
                     // <<<prop>>>(i)        //S2
-                        if (cudaSuccess!= cudaMemset(d_b1_A, 0, n*A_bytesizes[i+1]) ) {throw std::runtime_error("CUDA memset failed");};
+                        if (cudaSuccess!= cudaMemset(d_b1_A, 0, n*A_bytesizes[i+1]+1) ) {throw std::runtime_error("CUDA memset failed");};
                         gridDim.x = layers[i+1];       //p is the #cols of W[i] (which is the #cols of A[i+1])
                         propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b2_A, d_b1_W, d_b1_A);
 
@@ -126,11 +124,11 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
             // DELOADING: phase 1
                 // D2H: A[depth]        //S1
-                    A_list[depth] = new T[n*layers[depth]];
-                    if (cudaSuccess!=cudaMemcpyAsync(A_list[depth], d_b1_A, n*A_bytesizes[depth], cudaMemcpyDeviceToHost, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
+                    A_list[depth] = new T[n*layers[depth]+1]();
+                    if (cudaSuccess!=cudaMemcpyAsync(A_list[depth], d_b1_A, n*A_bytesizes[depth]+1, cudaMemcpyDeviceToHost, TransferStream) ) {throw std::runtime_error("CUDA memcpy failed");};
 
                 // <<<prop>>>(depth)    //S2
-                    if (cudaSuccess!= cudaMemsetAsync(d_b2_A, 0, n*A_bytesizes[depth+1], ProcessStream) ) {throw std::runtime_error("CUDA memset failed");};
+                    if (cudaSuccess!= cudaMemsetAsync(d_b2_A, 0, n*A_bytesizes[depth+1]+1, ProcessStream) ) {throw std::runtime_error("CUDA memset failed");};
                     gridDim.x = layers[depth+1];       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1    where p is the #cols of the next layer 
                     propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b1_A, d_b2_W, d_b2_A);
                     
@@ -142,8 +140,8 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
             // DELOADING: phase 2
                 // D2H: A[depth+1]      //S1
-                    A_list[depth+1] = new T[n*layers[depth+1]];
-                    cudaMemcpyAsync(A_list[depth+1], d_b2_A, n*A_bytesizes[depth+1], cudaMemcpyDeviceToHost, TransferStream);
+                    A_list[depth+1] = new T[n*layers[depth+1]+1]();
+                    cudaMemcpyAsync(A_list[depth+1], d_b2_A, n*A_bytesizes[depth+1]+1, cudaMemcpyDeviceToHost, TransferStream);
                 
                 // synchronise
                     cudaStreamSynchronize(TransferStream);
@@ -153,11 +151,11 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
             // DELOADING: phase 1
                 // D2H: A[depth]        //S1
-                    A_list[depth] = new T[n*layers[depth]];
-                    cudaMemcpyAsync(A_list[depth], d_b2_A, n*A_bytesizes[depth], cudaMemcpyDeviceToHost, TransferStream);
+                    A_list[depth] = new T[n*layers[depth]+1]();
+                    cudaMemcpyAsync(A_list[depth], d_b2_A, n*A_bytesizes[depth]+1, cudaMemcpyDeviceToHost, TransferStream);
 
                 // <<<prop>>>(depth)    //S2
-                    if (cudaSuccess!= cudaMemset(d_b1_A, 0, n*A_bytesizes[depth+1]) ) {throw std::runtime_error("CUDA memset failed");};
+                    if (cudaSuccess!= cudaMemset(d_b1_A, 0, n*A_bytesizes[depth+1]+1) ) {throw std::runtime_error("CUDA memset failed");};
                     gridDim.x = layers[depth+1];       //i.e. blockIdx.y goes from 0 -> n-1. blockIdx.x goes from 0 -> p/word_size -1    where p is the #cols of the next layer 
                     propagate<T><<<gridDim,blockDim,0,ProcessStream>>>(d_b2_A, d_b1_W, d_b1_A);
                     
@@ -169,8 +167,8 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
             // DELOADING: phase 2
                 // D2H: A[depth+1]      //S1
-                    A_list[depth+1] = new T[n*layers[depth+1]];
-                    cudaMemcpyAsync(A_list[depth+1], d_b1_A, n*A_bytesizes[depth+1], cudaMemcpyDeviceToHost, TransferStream);
+                    A_list[depth+1] = new T[n*layers[depth+1]+1]();
+                    cudaMemcpyAsync(A_list[depth+1], d_b1_A, n*A_bytesizes[depth+1]+1, cudaMemcpyDeviceToHost, TransferStream);
 
                 // synchronise
                     cudaStreamSynchronize(TransferStream);
@@ -205,14 +203,14 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
 
         A_list[0] = input_batch;
         n = batch_samples;
-        int m = layers[0];
         cudaMemcpyToSymbol(d_n, &n, sizeof(int));
-        cudaMemcpyToSymbol(d_m, &m, sizeof(int));
         
         T *d_A, *d_W, *d_O;
-        if (cudaSuccess!= cudaMalloc(&d_A, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+        
+
+        if (cudaSuccess!= cudaMalloc(&d_A, n*A_max+1) ) {throw std::runtime_error("CUDA memory allocation failed");};     //this is where malloc error coming from on second run 
         if (cudaSuccess!= cudaMalloc(&d_W, W_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
-        if (cudaSuccess!= cudaMalloc(&d_O, n*A_max) ) {throw std::runtime_error("CUDA memory allocation failed");};
+        if (cudaSuccess!= cudaMalloc(&d_O, n*A_max+1) ) {throw std::runtime_error("CUDA memory allocation failed");};
         
         for(int i = 0; i<=depth; i++){
             // std::cout<<i<<std::endl; //debug
@@ -222,6 +220,9 @@ void TritNet<T>::forward_pass(int batch_samples, T* &input_batch, bool multistre
         cudaFree(d_W);
         cudaFree(d_A);
         cudaFree(d_O);
+        d_W = nullptr;
+        d_A = nullptr;
+        d_O = nullptr;
 
 
         auto end = std::chrono::high_resolution_clock::now();

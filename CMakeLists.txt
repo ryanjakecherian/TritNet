@@ -36,6 +36,7 @@ ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/prop_layer.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/forward_pass.cu
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/init.cpp
 ${CMAKE_SOURCE_DIR}/src/bintern/TritNet/constructors.cpp
+${CMAKE_SOURCE_DIR}/src/bintern/TritNet/useful_funcs.cpp
 
 ${CMAKE_SOURCE_DIR}/src/main.cpp
 )

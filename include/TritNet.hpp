@@ -2,7 +2,7 @@
 #define TRITNET_HPP
 
 #undef WORD_SIZE
-#define WORD_SIZE 2        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
+#define WORD_SIZE 4        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
 
 #include <cuda_runtime.h>
 #include <stdint.h>
@@ -11,37 +11,52 @@ template<typename T>
 class TritNet{
     public:
         //methods
-        TritNet();
+            TritNet();
 
-        TritNet(int input_dim, int output_dim, int depth,int* hidden_layers);   // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
-        
-        void random_init();
-        void copy_init(T* original);
-
-        void forward_pass(int batch_samples, T* &input_batch, bool multistream);
-        void propagate_layer(int i, T *&d_A, T *&d_W, T *&d_O);  //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
+            TritNet(int input_dim, int output_dim, int depth,int* hidden_layers);       // Constructs the weight matrices for each layer, with appropriate (compressed) dimensions.
+            
+            void random_init();
+            void copy_init(T* original);
 
 
-        int* loss_calc(int* output_batch, int* true_outputs);
+
+            void forward_pass(int batch_samples, T* &input_batch, bool multistream);
+            void propagate_layer(int i, T *&d_A, T *&d_W, T *&d_O);                     //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
 
 
-        void backward_pass();
-        void bp(int i); //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
+
+            int* loss_calc(int* output_batch, int* true_outputs);
+
+
+
+            void backward_pass();
+            void backprop_layer(int i);                                                 //specify in makefile whether to include bintern, bintern_mma, terntern, or terntern_mma implementation files
+
+
+        //useful methods
+            void print_layer(int i);
+            void clear();
+
+
 
         //fields
-        int depth;  //# of hidden layers
-        int n; //batch_samples
-        int* layers;
+            int depth;              //# of hidden layers
+            int n=0;                //batch_samples
+            int* layers;
 
-        T **W_list, ** A_list;
-        int* W_bytesizes, *A_bytesizes;
-        int W_max, A_max;
+            T **W_list, ** A_list;
+            int* W_bytesizes, *A_bytesizes;
+            int W_max, A_max;
 };
 
 
 // Kernel declaration
 template<typename T> // lets use int
 __global__ void propagate(T* d_A, T* d_W, T* d_c);
+
+// Kernel declaration
+template<typename T> // lets use int
+__global__ void propagate_debug(T* d_A, T* d_W, T* d_c);
 
 //handy functions
 template<typename T>

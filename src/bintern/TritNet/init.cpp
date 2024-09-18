@@ -15,7 +15,7 @@
 template<typename T>
 void randomise(T* arr, int size){
     // int word_size = WORD_SIZE;                                                  //to bypass compiler warnings
-    int32_t upper = (WORD_SIZE < 32) ? ((1 << WORD_SIZE-1) - 1) : UINT32_MAX;
+    int32_t upper = (WORD_SIZE < 32) ? ((1 << WORD_SIZE) - 1) : UINT32_MAX;
 
     static std::default_random_engine engine(static_cast<unsigned int>(std::time(nullptr)));
     std::uniform_int_distribution<int>distribution(0, upper);
@@ -57,7 +57,6 @@ void copy_array(T* copy, int size, T* original, int idx){
 template void randomise<uint32_t>(uint32_t* arr, int size);
 template void print<uint32_t>(uint32_t* arr, int n, int m);
 template void copy_array<uint32_t>(uint32_t* copy, int size, uint32_t* original, int idx);
-
 
 
 template<typename T>

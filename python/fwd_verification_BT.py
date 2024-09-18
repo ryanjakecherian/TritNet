@@ -5,9 +5,9 @@ import time
 import sys
 
 # Redirect print output to a file
-sys.stdout = open("output.txt", "w")
+sys.stdout = open("python_output.txt", "w")
 
-WORD_SIZE = 32
+WORD_SIZE = 4
 
 # activation
 def sigma(A):
@@ -89,11 +89,11 @@ def comp_vert(arr,n,m,WORD_SIZE):
 # NET PARAMS
 ########################
 
-input_dim = 256              
-output_dim = 32
-depth = 1
-hidden_layers = [1024]       #layers must be divisable by word_size
-batch_size = 32
+input_dim = 8              
+output_dim = 4
+depth = 2
+hidden_layers = [8, 12]       #layers must be divisable by word_size
+batch_size = 300
 
 ########################
 
