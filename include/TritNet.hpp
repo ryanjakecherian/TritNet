@@ -2,7 +2,7 @@
 #define TRITNET_HPP
 
 #undef WORD_SIZE
-#define WORD_SIZE 4        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
+#define WORD_SIZE 32        //current implementation only goes up to max of 32. it is possible to go above this, but requires changing some code when randomising the inputs. also requires using uint_64t and not uint_32t.
 
 #include <cuda_runtime.h>
 #include <stdint.h>
@@ -40,6 +40,9 @@ class TritNet{
 
 
         //fields
+            int T_size = sizeof(T); //necessary for certain memory movements
+
+
             int depth;              //# of hidden layers
             int n=0;                //batch_samples
             int* layers;

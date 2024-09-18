@@ -15,20 +15,15 @@
 template<typename T>
 void randomise(T* arr, int size){
     // int word_size = WORD_SIZE;                                                  //to bypass compiler warnings
-    int32_t upper = (WORD_SIZE < 32) ? ((1 << WORD_SIZE) - 1) : UINT32_MAX;
+    uint32_t upper = (WORD_SIZE < 32) ? ((1U << WORD_SIZE) - 1) : UINT32_MAX;
 
     static std::default_random_engine engine(static_cast<unsigned int>(std::time(nullptr)));
     std::uniform_int_distribution<int>distribution(0, upper);
 
-    // std::cout<<"(";
+
     for(int i = 0;i<size;i++){
         arr[i] = distribution(engine);
-        // std::cout<<arr[i];
-
-        // if((i+1)%m==0) {std::cout<<"; ";} else {std::cout<<", ";}
-        // std::cout<<" ";
     }
-    // std::cout<<")"<<std::endl;
 
     std::cout<<"Matrix initialised to random values from 0 to "<< upper << ":"<<std::endl;
 }
@@ -70,12 +65,12 @@ void TritNet<T>::random_init(){
             std::cout<<"W_{"<<n<<"}"<<std::endl;
 
             std::cout<<"W_pos"<<std::endl;
-            randomise<T>(W_list[n]+1,layers[n]*layers[n+1]*WORD_SIZE);        //hifted by 1 since W[n][0] always holds its column dimension!
-            print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);
+            randomise<T>(W_list[n]+1,layers[n]*layers[n+1]*WORD_SIZE);          //shifted by 1 since W[n][0] always holds its column dimension!
+            // print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);           //un-comment if you wish to see the initialised weights
 
             std::cout<<"W_neg"<<std::endl;
             randomise<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n]*layers[n+1]*WORD_SIZE);
-            print<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n],layers[n+1]*WORD_SIZE);
+            // print<T>(W_list[n]+1+(layers[n]*layers[n+1]*WORD_SIZE),layers[n],layers[n+1]*WORD_SIZE);
 
             std::cout<<std::endl;
         }
@@ -97,7 +92,7 @@ void TritNet<T>::copy_init(T* original){
         
         std::cout<<"W_pos"<<std::endl;
         copy_array<T>(W_list[n]+1, layers[n]*layers[n+1]*WORD_SIZE, original, idx);           //shifted by 1 since W[n][0] always holds its column dimension! 
-        // print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);
+        // print<T>(W_list[n]+1,layers[n],layers[n+1]*WORD_SIZE);                               //un-comment if you wish to see the initialised weights
 
         idx +=  layers[n]*layers[n+1]*WORD_SIZE;
 
