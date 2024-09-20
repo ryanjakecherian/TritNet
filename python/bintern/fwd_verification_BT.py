@@ -3,7 +3,6 @@
 import random
 import time
 import sys
-import torch
 
 # Redirect print output to a file
 sys.stdout = open("python_output.txt", "w")
@@ -22,8 +21,7 @@ def sigma(A):
           
     return A
 
-#pytorch activation
-def sigma(tensor):
+
     # Apply the sigma function using PyTorch tensor operations
     result = torch.where(tensor >= 0, torch.tensor(1, dtype=tensor.dtype), torch.tensor(-1, dtype=tensor.dtype))
     return result
@@ -98,9 +96,9 @@ def comp_vert(arr,n,m,WORD_SIZE):
 
 input_dim = 1024              
 output_dim = 1024
-depth = 1
-hidden_layers = [1024]       #layers must be divisable by word_size
-batch_size = 10
+depth = 0
+hidden_layers = []       #layers must be divisable by word_size
+batch_size = 30
 
 ########################
 
@@ -153,17 +151,6 @@ output = convA_BT(output)
 output = comp_hori(output,batch_size,layers[depth+1],WORD_SIZE)
 print(output)
 #########################
-
-#pytorch version
-tensor_output = torch.tensor(input)
-tensor_w = torch.tensor(weights[0])
-tensor_out = torch.mul(tensor_output,tensor_w)
-tensor_out = sigma(tensor_out)
-
-for i in range(1, len(layers)-1):
-    tensor_w = torch.tensor(weights[i])
-    tensor_output = torch.mul(tensor_output,tensor_w)
-    tensor_out = sigma(tensor_out)
 
 
 
