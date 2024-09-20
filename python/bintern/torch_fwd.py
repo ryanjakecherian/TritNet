@@ -4,21 +4,23 @@ import sys
 import torch
 
 
+############################################################
+# PROFILER FLAGS
+repetitions = 4
+debug = 0
+need_cuda_inputs = 0
 
 
-##############################################################
-# DEVICE CHECK
-print(f"PyTorch CUDA Version: {torch.version.cuda}")
-print(f"CUDA Available: {torch.cuda.is_available()}")
-print(f"Current GPU Device ID: {torch.cuda.current_device()}")
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+# NET PARAMS
+WORD_SIZE = 32
+N = 32*32
 
-# WIPE FILES
-with open('init_for_cuda.txt', 'w') as file:
-        pass  # Opening in 'w' mode wipes the file
+input_dim = N             #all layers must be divisable by word_size          
+output_dim = N
+depth = 0
+hidden_layers = []        #N, N, N, N, N, N, N, N
+batch_size = N
 
-with open('python_results.txt', 'w') as file:
-        pass  # Opening in 'w' mode wipes the file
 
 
 
@@ -26,12 +28,9 @@ with open('python_results.txt', 'w') as file:
 ##############################################################
 # NET FUNCTIONS
 
-#pytorch activation
-# def sigma_torch(tensor):
-#     return torch.where(tensor >= 0, torch.ones_like(tensor), torch.full_like(tensor, -1))
-
 def sigma_torch(tensor):
-    return torch.sign(tensor)  # Similar to your custom function but optimized
+    return torch.sign(tensor)  # Note that this is not quite the real activation function. The real one is below. But im using an optimised one.
+    # return torch.where(tensor >= 0, torch.ones_like(tensor), torch.full_like(tensor, -1))
 
 # convert weights => (W_pos - W_neg)
 def convW_BT(weights):
@@ -116,23 +115,25 @@ def MatMul(A, B, N, M, P):
 
 
 
-for z in range(4):
-    ############################################################
-    # NET PARAMS
+##############################################################
+# DEVICE CHECK
+print(f"PyTorch CUDA Version: {torch.version.cuda}")
+print(f"CUDA Available: {torch.cuda.is_available()}")
+print(f"Current GPU Device ID: {torch.cuda.current_device()}")
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
+# WIPE FILES
+with open('init_for_cuda.txt', 'w') as file:
+        pass  # Opening in 'w' mode wipes the file
+
+with open('python_results.txt', 'w') as file:
+        pass  # Opening in 'w' mode wipes the file
 
 
-    WORD_SIZE = 32
-    N = 32*4
 
-    input_dim = N              
-    output_dim = N
-    depth = 0
-    hidden_layers = []       #layers must be divisable by word_size      #1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
-    batch_size = N
-
-
-
-
+############################################################
+# LOOP
+for z in range(repetitions):
     ############################################################
     # SETUP
 
@@ -193,83 +194,65 @@ for z in range(4):
 
 
 
-# sys.stdout = open("python_results.txt", "a")
-# print("torch output:")
-# print(activations[depth+1])
+############################################################
+# PRINT OUTPUT
+if (debug):
+    sys.stdout = open("python_results.txt", "a")
+    print("torch output:")
+    print(activations[depth+1])
 
-# print("output in cuda format:")
-# output = convA_BT(output)
-# output = comp_hori(output,batch_size,layers[depth+1],WORD_SIZE)
-# print(output)
+    print("output in cuda format:")
+    output = convA_BT(output)
+    output = comp_hori(output,batch_size,layers[depth+1],WORD_SIZE)
+    print(output)
 
-# print('\n')
-# print('\n')
-# print("___________")
+    print('\n')
+    print('\n')
+    print("___________")
 
-# sys.stdout.close()
-# sys.stdout = sys.__stdout__
-
-
-
+    sys.stdout.close()
+    sys.stdout = sys.__stdout__
 
 
 # ############################################################
-# # CUDA 
-# # Redirect print output to a file
-# sys.stdout = open("init_for_cuda.txt", "a")
+# PRINT CUDA INPUTS
+if (need_cuda_inputs): 
+    ## Redirect print output to a file
+    sys.stdout = open("init_for_cuda.txt", "a")
 
-# ## 1. converting the weights
-# W_pos, W_neg = convW_BT(weights)
+    ## 1. converting the weights
+    W_pos, W_neg = convW_BT(weights)
 
-# ## 2. compressing the weights
-# cuda_weights_size = 0
-# for n in range(len(weights)):
-#     cuda_weights_size += 2*layers[n]*layers[n+1]
-#     W_pos[n] = comp_vert(W_pos[n],layers[n],layers[n+1],WORD_SIZE)
-#     W_neg[n] = comp_vert(W_neg[n],layers[n],layers[n+1],WORD_SIZE)
+    ## 2. compressing the weights
+    cuda_weights_size = 0
+    for n in range(len(weights)):
+        cuda_weights_size += 2*layers[n]*layers[n+1]
+        W_pos[n] = comp_vert(W_pos[n],layers[n],layers[n+1],WORD_SIZE)
+        W_neg[n] = comp_vert(W_neg[n],layers[n],layers[n+1],WORD_SIZE)
 
-# ## 3. getting the size of the total list (necessary for cuda code)
-# print("size of total cuda weights array: ")
-# print(cuda_weights_size//WORD_SIZE)
+    ## 3. getting the size of the total list (necessary for cuda code)
+    print("size of total cuda weights array: ")
+    print(cuda_weights_size//WORD_SIZE)
 
-# ## 4. concatenating all into one list
-# cuda_weights = [0]
-# for n in range(len(weights)):
-#     cuda_weights += W_pos[n] + W_neg[n]
-# cuda_weights.pop(0)
-
-
-# ## 5. converting & compressing the input
-# A_bin = convA_BT(input)
-# A_bin = comp_hori(A_bin,batch_size,layers[0],WORD_SIZE)
+    ## 4. concatenating all into one list
+    cuda_weights = [0]
+    for n in range(len(weights)):
+        cuda_weights += W_pos[n] + W_neg[n]
+    cuda_weights.pop(0)
 
 
-
-
-# ## 6. this output can be fed into CUDA
-# print("cuda weights:")
-# print(cuda_weights)
-# print("cuda input:")
-# print(A_bin)
+    ## 5. converting & compressing the input
+    A_bin = convA_BT(input)
+    A_bin = comp_hori(A_bin,batch_size,layers[0],WORD_SIZE)
 
 
 
 
-
-
-
-# ## this is potential code for mapping to TernTern format (from W => W0*W1)
-# # for n in range(len(new_list)):
-# #     for i in range(len(W)):
-# #         new_list[n]->W1[i] = not(not( (old_list->W[i]) >> 1 ))  #maps {-1,0,1} -> {1,0,0}
-# #         new_list[n]->W0[i] = not(old_list->W[i])                #only evaluates true if input is zero
-
-
-# # Close the file when done and restore print to the console (if needed after the redirection)
-# sys.stdout.close()
-# sys.stdout = sys.__stdout__
-
-# ########################
+    ## 6. this output can be fed into CUDA
+    print("cuda weights:")
+    print(cuda_weights)
+    print("cuda input:")
+    print(A_bin)
 
 
 
@@ -277,11 +260,13 @@ for z in range(4):
 
 
 
+    # ## this is potential code for mapping to TernTern format (from W => W0*W1)
+    # # for n in range(len(new_list)):
+    # #     for i in range(len(W)):
+    # #         new_list[n]->W1[i] = not(not( (old_list->W[i]) >> 1 ))  #maps {-1,0,1} -> {1,0,0}
+    # #         new_list[n]->W0[i] = not(old_list->W[i])                #only evaluates true if input is zero
 
 
-# # get error with these inputs:
-# # input_dim = 8                  
-# # output_dim = 2
-# # depth = 6
-# # hidden_layers = [32, 32, 32, 32, 32, 32]       #layers must be divisable by word_size
-# # batch_size = 4
+    # # Close the file when done and restore print to the console (if needed after the redirection)
+    # sys.stdout.close()
+    # sys.stdout = sys.__stdout__
